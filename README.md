@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.ploruto:webview_java:v0.15.0")
+    implementation("com.github.ploruto:webview_java:v0.16.0")
 }
 ```
 
