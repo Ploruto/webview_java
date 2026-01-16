@@ -44,7 +44,11 @@ jobs:
             -D CMAKE_BUILD_TYPE=Release \
             -D WEBVIEW_BUILD_SHARED_LIBRARY=ON \
             -D WEBVIEW_BUILD_STATIC_LIBRARY=OFF \
-            -D WEBVIEW_BUILD_EXAMPLES=OFF
+            -D WEBVIEW_BUILD_EXAMPLES=OFF \
+            -D WEBVIEW_BUILD_DOCS=OFF \
+            -D WEBVIEW_ENABLE_CHECKS=OFF \
+            -D WEBVIEW_ENABLE_CLANG_FORMAT=OFF \
+            -D WEBVIEW_ENABLE_CLANG_TIDY=OFF
           cmake --build build
           
           # Copy to Java resources
@@ -89,7 +93,11 @@ jobs:
             -D CMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
             -D WEBVIEW_BUILD_SHARED_LIBRARY=ON \
             -D WEBVIEW_BUILD_STATIC_LIBRARY=OFF \
-            -D WEBVIEW_BUILD_EXAMPLES=OFF
+            -D WEBVIEW_BUILD_EXAMPLES=OFF \
+            -D WEBVIEW_BUILD_DOCS=OFF \
+            -D WEBVIEW_ENABLE_CHECKS=OFF \
+            -D WEBVIEW_ENABLE_CLANG_FORMAT=OFF \
+            -D WEBVIEW_ENABLE_CLANG_TIDY=OFF
           cmake --build build
           
           # Copy to Java resources
@@ -137,7 +145,11 @@ jobs:
             -D CMAKE_BUILD_TYPE=Release \
             -D WEBVIEW_BUILD_SHARED_LIBRARY=ON \
             -D WEBVIEW_BUILD_STATIC_LIBRARY=OFF \
-            -D WEBVIEW_BUILD_EXAMPLES=OFF
+            -D WEBVIEW_BUILD_EXAMPLES=OFF \
+            -D WEBVIEW_BUILD_DOCS=OFF \
+            -D WEBVIEW_ENABLE_CHECKS=OFF \
+            -D WEBVIEW_ENABLE_CLANG_FORMAT=OFF \
+            -D WEBVIEW_ENABLE_CLANG_TIDY=OFF
           cmake --build build
           
           # Copy to Java resources
