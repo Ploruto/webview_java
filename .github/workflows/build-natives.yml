@@ -51,8 +51,8 @@ jobs:
             -D WEBVIEW_ENABLE_CLANG_TIDY=OFF
           cmake --build build
           
-          # Copy to Java resources
-          cp build/webview/libwebview.so "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          # Copy to Java resources (versioned .so.0.12.0 is the actual compiled artifact)
+          cp build/core/libwebview.so.0.12.0 "$GITHUB_WORKSPACE/$OUTPUT_DIR/libwebview.so"
           
           echo "✓ Linux x86_64 built"
           nm -D "$GITHUB_WORKSPACE/$OUTPUT_DIR/libwebview.so" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
@@ -101,7 +101,7 @@ jobs:
           cmake --build build
           
           # Copy to Java resources
-          cp build/webview/libwebview.dylib "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          cp build/core/libwebview.dylib "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
           
           echo "✓ macOS ${{ matrix.arch }} built"
           nm "$GITHUB_WORKSPACE/$OUTPUT_DIR/libwebview.dylib" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
@@ -153,7 +153,7 @@ jobs:
           cmake --build build
           
           # Copy to Java resources
-          cp build/webview/webview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          cp build/core/webview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
           
           echo "✓ Windows x86_64 built"
           ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
