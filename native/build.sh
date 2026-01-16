@@ -1,12 +1,22 @@
 #!/bin/bash
 # Build script for webview JNA wrapper
 # Compiles the webview library for Linux x86_64, macOS, and Windows
+#
+# Usage:
+#   ./build.sh                    # Build for current platform
+#   WEBVIEW_SRC=/path build.sh    # Override webview source location
+#   ./build.sh --all              # Attempt to build all platforms (requires cross-compilers)
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/build"
-WEBVIEW_SRC="/home/phaack/temp/webview"
+
+# Allow overriding webview source location
+if [ -z "$WEBVIEW_SRC" ]; then
+    WEBVIEW_SRC="/home/phaack/temp/webview"
+fi
+
 OUTPUT_DIR="$SCRIPT_DIR/../core/src/main/resources/dev/webview/natives"
 
 # Create output directories
@@ -69,4 +79,8 @@ fi
 
 echo ""
 echo "Build complete! Output in: $OUTPUT_DIR"
-ls -lR "$OUTPUT_DIR"
+echo ""
+echo "=== Built libraries ==="
+find "$OUTPUT_DIR" -type f \( -name "*.so" -o -name "*.dylib" -o -name "*.dll" \) -exec ls -lh {} \;
+echo ""
+echo "Note: GitHub Actions will build all platforms automatically on push."

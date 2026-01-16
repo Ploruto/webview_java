@@ -41,7 +41,12 @@ public class Webview implements Closeable {
         } else if (osName.contains("mac")) {
             ext = ".dylib";
             libName = "webview";
-            resourcePath = "/dev/webview/natives/aarch64-macos/libwebview.dylib";
+            // Detect macOS architecture
+            if (arch.contains("aarch64") || arch.contains("arm")) {
+                resourcePath = "/dev/webview/natives/aarch64-macos/libwebview.dylib";
+            } else {
+                resourcePath = "/dev/webview/natives/x86_64-macos/libwebview.dylib";
+            }
         } else if (osName.contains("win")) {
             ext = ".dll";
             libName = "webview";
