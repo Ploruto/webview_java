@@ -152,8 +152,8 @@ jobs:
             -D WEBVIEW_ENABLE_CLANG_TIDY=OFF
           cmake --build build
           
-          # Copy to Java resources
-          cp build/core/webview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          # Copy to Java resources (Windows builds as libwebview.dll)
+          cp build/core/libwebview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/webview.dll"
           
           echo "✓ Windows x86_64 built"
           ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
