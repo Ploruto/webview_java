@@ -44,16 +44,19 @@ jobs:
           GTK_CFLAGS=$(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1)
           GTK_LIBS=$(pkg-config --libs gtk+-3.0 webkit2gtk-4.1)
           
-          # Build shared library
+          # Build shared library with full symbol preservation
           g++ -std=c++11 -fPIC -shared \
             -I/tmp/webview/core/include \
             $GTK_CFLAGS \
             -Wl,--export-dynamic \
+            -Wl,-B,symbolic \
+            -Wl,--no-strip-all \
             -o "$OUTPUT_DIR/libwebview.so" \
             webview_wrapper.cc \
             $GTK_LIBS -ldl
           
           echo "✓ Linux x86_64 built"
+          nm -D "$OUTPUT_DIR/libwebview.so" | grep webview_create || echo "⚠️ Warning: webview_create symbol not found"
           ls -lh "$OUTPUT_DIR"
 
       - name: Upload Linux artifacts
@@ -87,9 +90,10 @@ jobs:
           fi
           mkdir -p "$OUTPUT_DIR"
           
-          # Build with specific architecture
+          # Build with specific architecture and full symbol preservation
           clang++ -std=c++11 -fPIC -shared \
             -arch ${{ matrix.arch }} \
+            -fvisibility=default \
             -I/tmp/webview/core/include \
             -framework Cocoa \
             -framework WebKit \
@@ -97,6 +101,7 @@ jobs:
             webview_wrapper.cc
           
           echo "✓ macOS ${{ matrix.arch }} built"
+          nm "$OUTPUT_DIR/libwebview.dylib" | grep webview_create || echo "⚠️ Warning: webview_create symbol not found"
           ls -lh "$OUTPUT_DIR"
           file "$OUTPUT_DIR/libwebview.dylib"
 
@@ -138,6 +143,7 @@ jobs:
             /IC:\webview2\Microsoft.Web.WebView2.1.0.2792.45\build\native\include ^
             /LD webview_wrapper.cc ^
             /link /DEF:webview.def /OUT:..\core\src\main\resources\dev\webview\natives\x86_64-windows\webview.dll ^
+            /DEBUG ^
             advapi32.lib ole32.lib shell32.lib shlwapi.lib user32.lib version.lib ^
             C:\webview2\Microsoft.Web.WebView2.1.0.2792.45\build\native\x64\WebView2LoaderStatic.lib
           
