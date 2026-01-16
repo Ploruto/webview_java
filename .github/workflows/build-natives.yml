@@ -35,25 +35,24 @@ jobs:
 
       - name: Build Linux x86_64
         run: |
-          cd native
-          mkdir -p build
-          OUTPUT_DIR="../core/src/main/resources/dev/webview/natives/x86_64-linux"
+          OUTPUT_DIR="core/src/main/resources/dev/webview/natives/x86_64-linux"
           mkdir -p "$OUTPUT_DIR"
           
-          # Use CMake to build with webview as subdirectory
+          # Build webview shared library directly using its CMakeLists.txt
+          cd /tmp/webview
           cmake -G Ninja -B build -S . \
-            -D WEBVIEW_SRC=/tmp/webview \
-            -D CMAKE_BUILD_TYPE=Release
+            -D CMAKE_BUILD_TYPE=Release \
+            -D WEBVIEW_BUILD_SHARED_LIBRARY=ON \
+            -D WEBVIEW_BUILD_STATIC_LIBRARY=OFF \
+            -D WEBVIEW_BUILD_EXAMPLES=OFF
           cmake --build build
           
+          # Copy to Java resources
+          cp build/webview/libwebview.so "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          
           echo "✓ Linux x86_64 built"
-          if [ -f "$OUTPUT_DIR/libwebview.so" ]; then
-            nm -D "$OUTPUT_DIR/libwebview.so" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
-            ls -lh "$OUTPUT_DIR"
-          else
-            echo "⚠️ libwebview.so not found in $OUTPUT_DIR"
-            find build -name "*.so" 2>/dev/null
-          fi
+          nm -D "$GITHUB_WORKSPACE/$OUTPUT_DIR/libwebview.so" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
+          ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR"
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -76,32 +75,30 @@ jobs:
 
       - name: Build macOS ${{ matrix.arch }}
         run: |
-          cd native
-          mkdir -p build
-          
           if [ "${{ matrix.arch }}" = "arm64" ]; then
-            OUTPUT_DIR="../core/src/main/resources/dev/webview/natives/aarch64-macos"
+            OUTPUT_DIR="core/src/main/resources/dev/webview/natives/aarch64-macos"
           else
-            OUTPUT_DIR="../core/src/main/resources/dev/webview/natives/x86_64-macos"
+            OUTPUT_DIR="core/src/main/resources/dev/webview/natives/x86_64-macos"
           fi
           mkdir -p "$OUTPUT_DIR"
           
-          # Use CMake to build with webview as subdirectory
+          # Build webview shared library directly using its CMakeLists.txt
+          cd /tmp/webview
           cmake -G Ninja -B build -S . \
-            -D WEBVIEW_SRC=/tmp/webview \
             -D CMAKE_BUILD_TYPE=Release \
-            -D CMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
+            -D CMAKE_OSX_ARCHITECTURES=${{ matrix.arch }} \
+            -D WEBVIEW_BUILD_SHARED_LIBRARY=ON \
+            -D WEBVIEW_BUILD_STATIC_LIBRARY=OFF \
+            -D WEBVIEW_BUILD_EXAMPLES=OFF
           cmake --build build
           
+          # Copy to Java resources
+          cp build/webview/libwebview.dylib "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          
           echo "✓ macOS ${{ matrix.arch }} built"
-          if [ -f "$OUTPUT_DIR/libwebview.dylib" ]; then
-            nm "$OUTPUT_DIR/libwebview.dylib" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
-            ls -lh "$OUTPUT_DIR"
-            file "$OUTPUT_DIR/libwebview.dylib"
-          else
-            echo "⚠️ libwebview.dylib not found in $OUTPUT_DIR"
-            find build -name "*.dylib" 2>/dev/null
-          fi
+          nm "$GITHUB_WORKSPACE/$OUTPUT_DIR/libwebview.dylib" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
+          ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR"
+          file "$GITHUB_WORKSPACE/$OUTPUT_DIR/libwebview.dylib"
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -131,23 +128,23 @@ jobs:
       - name: Build Windows x86_64
         shell: bash
         run: |
-          cd native
-          mkdir -p build
-          mkdir -p ../core/src/main/resources/dev/webview/natives/x86_64-windows
+          OUTPUT_DIR="core/src/main/resources/dev/webview/natives/x86_64-windows"
+          mkdir -p "$OUTPUT_DIR"
           
-          # Use CMake to build with webview as subdirectory
+          # Build webview shared library directly using its CMakeLists.txt
+          cd C:/webview
           cmake -G "Ninja" -B build -S . \
-            -D WEBVIEW_SRC=C:/webview \
-            -D CMAKE_BUILD_TYPE=Release
+            -D CMAKE_BUILD_TYPE=Release \
+            -D WEBVIEW_BUILD_SHARED_LIBRARY=ON \
+            -D WEBVIEW_BUILD_STATIC_LIBRARY=OFF \
+            -D WEBVIEW_BUILD_EXAMPLES=OFF
           cmake --build build
           
+          # Copy to Java resources
+          cp build/webview/webview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          
           echo "✓ Windows x86_64 built"
-          if [ -f "../core/src/main/resources/dev/webview/natives/x86_64-windows/webview.dll" ]; then
-            ls -lh ../core/src/main/resources/dev/webview/natives/x86_64-windows/
-          else
-            echo "⚠️ webview.dll not found in expected location"
-            find build -name "*.dll" 2>/dev/null
-          fi
+          ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
