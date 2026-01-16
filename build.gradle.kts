@@ -1,7 +1,4 @@
-plugins {
-    java
-    `maven-publish`
-}
+// Root project: aggregator only (NOT published)
 
 group = "dev.webview"
 version = "0.13.0"
@@ -18,32 +15,44 @@ subprojects {
     repositories {
         mavenCentral()
     }
+}
+
+project(":core") {
+    // Publishable Java library
+    apply(plugin = "java-library")
+
+    dependencies {
+        implementation("net.java.dev.jna:jna:5.14.0")
+        implementation("net.java.dev.jna:jna-platform:5.14.0")
+
+        compileOnly("org.projectlombok:lombok:1.18.30")
+        compileOnly("org.jetbrains:annotations:24.0.0")
+    }
 
     publishing {
         publications {
             create<MavenPublication>("maven") {
                 from(components["java"])
+                groupId = project.group.toString()
+                artifactId = "core"
+                version = project.version.toString()
             }
         }
-    }
-}
-
-project(":core") {
-    dependencies {
-        implementation("net.java.dev.jna:jna:5.14.0")
-        implementation("net.java.dev.jna:jna-platform:5.14.0")
-        compileOnly("org.projectlombok:lombok:1.18.30")
-        compileOnly("org.jetbrains:annotations:24.0.0")
     }
 
     tasks.jar {
         from(sourceSets["main"].output)
         // Include native libraries
-        from(fileTree("src/main/resources") { include("**/*.so", "**/*.dll", "**/*.dylib") })
+        from(
+            fileTree("src/main/resources") {
+                include("**/*.so", "**/*.dll", "**/*.dylib")
+            }
+        )
     }
 }
 
 project(":examples") {
+    // Application module — NOT published
     apply(plugin = "application")
 
     dependencies {
@@ -58,4 +67,10 @@ project(":examples") {
         classpath = sourceSets["main"].runtimeClasspath
         mainClass = "dev.webview.examples.HelloWorld"
     }
+
+    // Explicitly disable publishing for examples
+    tasks.withType<PublishToMavenRepository>().configureEach {
+        enabled = false
+    }
 }
+
