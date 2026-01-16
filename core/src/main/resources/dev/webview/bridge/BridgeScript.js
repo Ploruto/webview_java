@@ -5,11 +5,103 @@
     delete window.__bridgeInternal; // Hide internal function
 
     let objectRegistry = {};
+    let eventListeners = {}; // Event listener registry
 
     const Bridge = {
+        /**
+         * Register an event listener
+         * @param {string} eventType - The event type to listen for
+         * @param {function} callback - The callback function to invoke
+         * @returns {function} Unsubscribe function
+         */
+        on(eventType, callback) {
+            if (typeof eventType !== 'string' || typeof callback !== 'function') {
+                throw new Error('Bridge.on() requires a string event type and callback function');
+            }
+            
+            if (!eventListeners[eventType]) {
+                eventListeners[eventType] = [];
+            }
+            
+            eventListeners[eventType].push(callback);
+            
+            // Return unsubscribe function
+            return () => {
+                const index = eventListeners[eventType].indexOf(callback);
+                if (index > -1) {
+                    eventListeners[eventType].splice(index, 1);
+                }
+            };
+        },
+
+        /**
+         * Register a one-time event listener
+         * @param {string} eventType - The event type to listen for
+         * @param {function} callback - The callback function to invoke
+         */
+        once(eventType, callback) {
+            const unsubscribe = Bridge.on(eventType, (data) => {
+                unsubscribe();
+                callback(data);
+            });
+            return unsubscribe;
+        },
+
+        /**
+         * Remove event listener(s)
+         * @param {string} eventType - The event type
+         * @param {function} [callback] - Optional specific callback to remove
+         */
+        off(eventType, callback) {
+            if (!eventListeners[eventType]) return;
+            
+            if (callback) {
+                const index = eventListeners[eventType].indexOf(callback);
+                if (index > -1) {
+                    eventListeners[eventType].splice(index, 1);
+                }
+            } else {
+                // Remove all listeners for this event type
+                delete eventListeners[eventType];
+            }
+        },
+
         __internal: {
-            async sendMessageToJava(type, data) {
-                return await __bridgeInternal(type, data);
+            sendMessageToJava(type, data) {
+                return __bridgeInternal(type, data);
+            },
+
+            /**
+             * Dispatch an event from Java
+             * Called by Java's bridge.emit()
+             */
+            dispatch(eventType, data) {
+                console.log('[Bridge] Event dispatched:', eventType, data);
+                
+                const listeners = eventListeners[eventType];
+                if (listeners && listeners.length > 0) {
+                    listeners.forEach(callback => {
+                        try {
+                            callback(data);
+                        } catch (error) {
+                            console.error('[Bridge] Error in event listener for', eventType, ':', error);
+                        }
+                    });
+                }
+            },
+
+            /**
+             * Update property cache directly (called by propertyUpdated event)
+             * @param {string} objectId - The object ID
+             * @param {string} propertyName - The property name
+             * @param {*} value - The new value
+             */
+            updatePropertyCache(objectId, propertyName, value) {
+                const obj = objectRegistry[objectId];
+                if (obj && obj.__internal && obj.__internal.propertyCache) {
+                    obj.__internal.propertyCache[propertyName] = value;
+                    console.log('[Bridge] Property cache updated:', objectId, propertyName, '=', value);
+                }
             },
 
             defineObject(path, id) {
@@ -124,6 +216,14 @@
         }
     };
 
+    // Auto-subscribe to propertyUpdated event for cache synchronization
+    Bridge.on('propertyUpdated', (data) => {
+        // data = { objectId: 'xxx', property: 'count', value: 5 }
+        if (data && data.objectId && data.property !== undefined) {
+            Bridge.__internal.updatePropertyCache(data.objectId, data.property, data.value);
+        }
+    });
+
     Object.freeze(Bridge);
     Object.freeze(Bridge.__internal);
     Object.defineProperty(window, 'Bridge', {
@@ -132,5 +232,5 @@
         configurable: false
     });
 
-    console.log('[Bridge] Initialized');
+    console.log('[Bridge] Initialized with event system and property cache sync');
 })();

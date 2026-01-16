@@ -70,6 +70,51 @@ public class WebviewBridge {
         objects.put(name, obj);
     }
 
+    /**
+     * Emit an event to JavaScript.
+     * Dispatches a CustomEvent that can be listened to with Bridge.on()
+     * 
+     * @param eventType The event type/name
+     * @param data The event data (will be JSON serialized)
+     */
+    public void emit(String eventType, Object data) {
+        try {
+            String jsonData = toJson(data);
+            // Escape single quotes and backslashes for JavaScript string
+            String escapedType = eventType.replace("\\", "\\\\").replace("'", "\\'");
+            
+            // Call Bridge.__internal.dispatch() which will fire the event
+            String script = String.format(
+                "if (window.Bridge && window.Bridge.__internal && window.Bridge.__internal.dispatch) {" +
+                "  window.Bridge.__internal.dispatch('%s', %s);" +
+                "}",
+                escapedType,
+                jsonData
+            );
+            
+            webview.eval(script);
+        } catch (Exception e) {
+            System.err.println("[WebviewBridge] Error emitting event '" + eventType + "': " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Emit a property update event to synchronize JavaScript property cache.
+     * This automatically updates the cached property value in JavaScript.
+     * 
+     * @param obj The JavascriptObject whose property changed
+     * @param propertyName The name of the property that changed
+     * @param newValue The new value of the property
+     */
+    public void emitPropertyUpdate(JavascriptObject obj, String propertyName, Object newValue) {
+        Map<String, Object> data = new HashMap<>();
+        data.put("objectId", obj.getId());
+        data.put("property", propertyName);
+        data.put("value", newValue);
+        emit("propertyUpdated", data);
+    }
+
     private void rebuildInitScript() {
         List<String> init = new ArrayList<>();
         init.add(bridgeScript);
@@ -178,7 +223,19 @@ public class WebviewBridge {
         if (obj instanceof String) {
             return JSONObject.quote((String) obj);
         }
-        // For other objects, try to convert to JSON
-        return new JSONObject().put("value", obj).get("value").toString();
+        if (obj instanceof Map) {
+            // Convert Map to JSONObject
+            return new JSONObject((Map<?, ?>) obj).toString();
+        }
+        if (obj instanceof Iterable) {
+            // Convert List/Collection to JSONArray
+            JSONArray arr = new JSONArray();
+            for (Object item : (Iterable<?>) obj) {
+                arr.put(item);
+            }
+            return arr.toString();
+        }
+        // For other objects, try to wrap in JSONObject
+        return new JSONObject().put("value", obj).toString();
     }
 }
