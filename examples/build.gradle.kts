@@ -2,16 +2,23 @@ plugins {
     application
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
 dependencies {
     implementation(project(":core"))
 }
 
 application {
-    //mainClassName = "dev.webview.examples.HelloWorld"
+    mainClass.set("dev.webview.examples.HelloWorld")
 }
 
-// Disable publishing completely
+// Never publish the examples module
 tasks.withType<PublishToMavenRepository>().configureEach {
     enabled = false
 }
+
 

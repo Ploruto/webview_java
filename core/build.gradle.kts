@@ -3,6 +3,12 @@ plugins {
     `maven-publish`
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
 dependencies {
     implementation("net.java.dev.jna:jna:5.14.0")
     implementation("net.java.dev.jna:jna-platform:5.14.0")
@@ -22,13 +28,9 @@ publishing {
     }
 }
 
-// Gradle 6–safe jar config
 tasks.withType<Jar>().configureEach {
     from(sourceSets.main.get().output)
-    from(
-        fileTree("src/main/resources") {
-            include("**/*.so", "**/*.dll", "**/*.dylib")
-        }
-    )
-}
+    }
+
+
 
