@@ -2,7 +2,6 @@
 build/
 .gradle/
 *.class
-*.jar
 
 # IDE
 .classpath
