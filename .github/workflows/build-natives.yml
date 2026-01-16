@@ -40,23 +40,20 @@ jobs:
           OUTPUT_DIR="../core/src/main/resources/dev/webview/natives/x86_64-linux"
           mkdir -p "$OUTPUT_DIR"
           
-          # Get GTK/WebKit flags
-          GTK_CFLAGS=$(pkg-config --cflags gtk+-3.0 webkit2gtk-4.1)
-          GTK_LIBS=$(pkg-config --libs gtk+-3.0 webkit2gtk-4.1)
-          
-          # Build shared library with full symbol preservation
-          g++ -std=c++11 -fPIC -shared \
-            -I/tmp/webview/core/include \
-            $GTK_CFLAGS \
-            -Wl,--export-dynamic \
-            -Wl,-Bsymbolic \
-            -o "$OUTPUT_DIR/libwebview.so" \
-            webview_wrapper.cc \
-            $GTK_LIBS -ldl
+          # Use CMake to build with webview as subdirectory
+          cmake -G Ninja -B build -S . \
+            -D WEBVIEW_SRC=/tmp/webview \
+            -D CMAKE_BUILD_TYPE=Release
+          cmake --build build
           
           echo "✓ Linux x86_64 built"
-          nm -D "$OUTPUT_DIR/libwebview.so" | grep webview_create || echo "⚠️ Warning: webview_create symbol not found"
-          ls -lh "$OUTPUT_DIR"
+          if [ -f "$OUTPUT_DIR/libwebview.so" ]; then
+            nm -D "$OUTPUT_DIR/libwebview.so" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
+            ls -lh "$OUTPUT_DIR"
+          else
+            echo "⚠️ libwebview.so not found in $OUTPUT_DIR"
+            find build -name "*.so" 2>/dev/null
+          fi
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
@@ -89,20 +86,22 @@ jobs:
           fi
           mkdir -p "$OUTPUT_DIR"
           
-          # Build with specific architecture and full symbol preservation
-          clang++ -std=c++11 -fPIC -shared \
-            -arch ${{ matrix.arch }} \
-            -fvisibility=default \
-            -I/tmp/webview/core/include \
-            -framework Cocoa \
-            -framework WebKit \
-            -o "$OUTPUT_DIR/libwebview.dylib" \
-            webview_wrapper.cc
+          # Use CMake to build with webview as subdirectory
+          cmake -G Ninja -B build -S . \
+            -D WEBVIEW_SRC=/tmp/webview \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D CMAKE_OSX_ARCHITECTURES=${{ matrix.arch }}
+          cmake --build build
           
           echo "✓ macOS ${{ matrix.arch }} built"
-          nm "$OUTPUT_DIR/libwebview.dylib" | grep webview_create || echo "⚠️ Warning: webview_create symbol not found"
-          ls -lh "$OUTPUT_DIR"
-          file "$OUTPUT_DIR/libwebview.dylib"
+          if [ -f "$OUTPUT_DIR/libwebview.dylib" ]; then
+            nm "$OUTPUT_DIR/libwebview.dylib" | grep webview_create && echo "✓ webview_create symbol found" || echo "⚠️ Warning: webview_create symbol not found"
+            ls -lh "$OUTPUT_DIR"
+            file "$OUTPUT_DIR/libwebview.dylib"
+          else
+            echo "⚠️ libwebview.dylib not found in $OUTPUT_DIR"
+            find build -name "*.dylib" 2>/dev/null
+          fi
 
       - name: Upload macOS artifacts
         uses: actions/upload-artifact@v4
@@ -130,29 +129,25 @@ jobs:
           nuget install Microsoft.Web.WebView2 -Version 1.0.2792.45 -OutputDirectory C:/webview2
 
       - name: Build Windows x86_64
-        shell: cmd
+        shell: bash
         run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cd native
-          if not exist build mkdir build
-          if not exist ..\core\src\main\resources\dev\webview\natives\x86_64-windows mkdir ..\core\src\main\resources\dev\webview\natives\x86_64-windows
+          mkdir -p build
+          mkdir -p ../core/src/main/resources/dev/webview/natives/x86_64-windows
           
-          cl /EHsc /std:c++14 /D_WINDOWS /DWEBVIEW_STATIC ^
-            /IC:\webview\core\include ^
-            /IC:\webview2\Microsoft.Web.WebView2.1.0.2792.45\build\native\include ^
-            /LD webview_wrapper.cc ^
-            /link /DEF:webview.def /OUT:..\core\src\main\resources\dev\webview\natives\x86_64-windows\webview.dll ^
-            /DEBUG ^
-            advapi32.lib ole32.lib shell32.lib shlwapi.lib user32.lib version.lib ^
-            C:\webview2\Microsoft.Web.WebView2.1.0.2792.45\build\native\x64\WebView2LoaderStatic.lib
+          # Use CMake to build with webview as subdirectory
+          cmake -G "Ninja" -B build -S . \
+            -D WEBVIEW_SRC=C:/webview \
+            -D CMAKE_BUILD_TYPE=Release
+          cmake --build build
           
-          if exist ..\core\src\main\resources\dev\webview\natives\x86_64-windows\webview.dll (
-            echo Windows x86_64 built successfully
-          ) else (
-            echo ERROR: Build failed - DLL not created
-            exit /b 1
-          )
-          dir ..\core\src\main\resources\dev\webview\natives\x86_64-windows
+          echo "✓ Windows x86_64 built"
+          if [ -f "../core/src/main/resources/dev/webview/natives/x86_64-windows/webview.dll" ]; then
+            ls -lh ../core/src/main/resources/dev/webview/natives/x86_64-windows/
+          else
+            echo "⚠️ webview.dll not found in expected location"
+            find build -name "*.dll" 2>/dev/null
+          fi
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
