@@ -49,8 +49,7 @@ jobs:
             -I/tmp/webview/core/include \
             $GTK_CFLAGS \
             -Wl,--export-dynamic \
-            -Wl,-B,symbolic \
-            -Wl,--no-strip-all \
+            -Wl,-Bsymbolic \
             -o "$OUTPUT_DIR/libwebview.so" \
             webview_wrapper.cc \
             $GTK_LIBS -ldl
