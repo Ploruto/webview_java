@@ -1,0 +1,28 @@
+# Build artifacts
+build/
+.gradle/
+*.class
+*.jar
+*.so
+*.dll
+*.dylib
+
+# IDE
+.classpath
+.project
+.settings/
+.idea/
+*.iml
+
+# Maven
+.m2/
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
