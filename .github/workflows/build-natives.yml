@@ -130,18 +130,23 @@ jobs:
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           cd native
-          mkdir build
-          mkdir ..\core\src\main\resources\dev\webview\natives\x86_64-windows
+          if not exist build mkdir build
+          if not exist ..\core\src\main\resources\dev\webview\natives\x86_64-windows mkdir ..\core\src\main\resources\dev\webview\natives\x86_64-windows
           
           cl /EHsc /std:c++14 /D_WINDOWS /DWEBVIEW_STATIC ^
             /IC:\webview\core\include ^
             /IC:\webview2\Microsoft.Web.WebView2.1.0.2792.45\build\native\include ^
             /LD webview_wrapper.cc ^
-            /link /OUT:..\core\src\main\resources\dev\webview\natives\x86_64-windows\webview.dll ^
+            /link /DEF:webview.def /OUT:..\core\src\main\resources\dev\webview\natives\x86_64-windows\webview.dll ^
             advapi32.lib ole32.lib shell32.lib shlwapi.lib user32.lib version.lib ^
             C:\webview2\Microsoft.Web.WebView2.1.0.2792.45\build\native\x64\WebView2LoaderStatic.lib
           
-          echo Windows x86_64 built
+          if exist ..\core\src\main\resources\dev\webview\natives\x86_64-windows\webview.dll (
+            echo Windows x86_64 built successfully
+          ) else (
+            echo ERROR: Build failed - DLL not created
+            exit /b 1
+          )
           dir ..\core\src\main\resources\dev\webview\natives\x86_64-windows
 
       - name: Upload Windows artifacts
