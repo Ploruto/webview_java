@@ -1,4 +1,4 @@
-rootProject.name = "webview_java"
+rootProject.name = "webview-java"
 
-include(":core")
-include(":examples")
+include("core", "examples")
+

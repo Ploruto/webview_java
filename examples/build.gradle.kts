@@ -1,5 +1,4 @@
 plugins {
-    java
     application
 }
 
@@ -8,5 +7,11 @@ dependencies {
 }
 
 application {
-    mainClass.set("dev.webview.webview_java.example.Example")
+    //mainClassName = "dev.webview.examples.HelloWorld"
 }
+
+// Disable publishing completely
+tasks.withType<PublishToMavenRepository>().configureEach {
+    enabled = false
+}
+
