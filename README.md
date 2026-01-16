@@ -1,48 +1,82 @@
 # webview_java
 
-Java bindings for the [webview](https://github.com/webview/webview) library.
+Java bindings for the [webview/webview](https://github.com/webview/webview) library. Cross-platform desktop applications with embedded web UIs.
 
-Built with SWIG + JNI for cross-platform support.
+## Quick Start
 
-## Building
+### Add Dependency
 
-```bash
-mvn clean package
+Add JitPack repository to `build.gradle.kts`:
+
+```kotlin
+repositories {
+    maven("https://jitpack.io")
+}
+
+dependencies {
+    implementation("com.github.ploruto:webview_java:v0.15.0")
+}
 ```
 
-The core module will be packaged as `webview_java-core-0.13.0.jar` with native libraries included.
-
-## Usage
-
-Add to your `pom.xml`:
-
-```xml
-<dependency>
-    <groupId>dev.webview</groupId>
-    <artifactId>webview_java-core</artifactId>
-    <version>0.13.0</version>
-</dependency>
-```
-
-### Example
+### Basic Example
 
 ```java
-import dev.webview.webview_java.Webview;
+import dev.webview.Webview;
 
 public class App {
     public static void main(String[] args) {
         try (Webview wv = new Webview(true)) {
             wv.setTitle("My App");
             wv.setSize(800, 600, Webview.HINT_NONE);
-            wv.navigate("https://example.com");
+            wv.setHtml("<html><body><h1>Hello from Java!</h1></body></html>");
+            // or wv.navigate(..url)
             wv.run();
         }
     }
 }
 ```
 
+### With JavaScript Bridge
+
+```java
+import dev.webview.Webview;
+import dev.webview.bridge.WebviewBridge;
+import dev.webview.bridge.JavascriptFunction;
+
+public class App {
+    public static void main(String[] args) {
+        try (Webview wv = new Webview(true)) {
+            WebviewBridge bridge = new WebviewBridge(wv);
+            bridge.defineObject("App", new AppObject());
+            
+            wv.setTitle("Bridge Example");
+            wv.setSize(800, 600, Webview.HINT_NONE);
+            wv.setHtml("<html><body><button onclick='App.onClick()'>Click</button></body></html>");
+            wv.run();
+        }
+    }
+
+    static class AppObject {
+        @JavascriptFunction
+        public void onClick() {
+            System.out.println("Clicked from JavaScript!");
+        }
+    }
+}
+```
+
+## Features
+
+- **Cross-platform**: Linux (GTK 3/4 + WebKit2GTK), Windows (WebView2), macOS (WebKit)
+- **Bi-directional JS Bridge**: Call Java from JS and vice versa
+- **Easy HTML rendering**: Use `setHtml()` or navigate with `navigate()`
+
+## Documentation
+
+See `examples/` for more complete examples including the bridge pattern with events.
+
 ## Supported Platforms
 
-- Linux x86_64 (with GTK 3/4 and WebKit2GTK)
-- Windows x86_64 (with WebView2)
-- macOS x86_64 and aarch64 (with WebKit)
+- Linux x86_64 (GTK 3/4, WebKit2GTK)
+- Windows x86_64 (WebView2)
+- macOS x86_64 & aarch64 (WebKit)
