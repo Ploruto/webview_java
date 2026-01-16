@@ -113,4 +113,39 @@ public interface WebviewNative extends Library {
      * @return The native handle or 0 if not available
      */
     long webview_get_native_handle(long w, int kind);
+
+    /**
+     * Binds a callback function so that it can be invoked from JavaScript.
+     *
+     * @param w Webview instance pointer
+     * @param name Name of the function (will be available as window[name])
+     * @param callback Callback function that receives the sequence ID and request JSON
+     * @param arg Optional user-provided argument passed to callback (use null if not needed)
+     * @return Error code (0 = success)
+     */
+    int webview_bind(long w, String name, BindCallback callback, com.sun.jna.Pointer arg);
+
+    /**
+     * Returns a result to JavaScript for a previously invoked binding callback.
+     *
+     * @param w Webview instance pointer
+     * @param seq Sequence ID from the callback invocation
+     * @param status Status code (0 = success, non-zero = error)
+     * @param result Result as JSON string (or empty string for undefined)
+     * @return Error code (0 = success)
+     */
+    int webview_return(long w, String seq, int status, String result);
+
+    /**
+     * Callback interface for webview_bind.
+     */
+    interface BindCallback extends com.sun.jna.Callback {
+        /**
+         * Called when JavaScript invokes the bound function.
+         * @param seq Sequence ID - pass this to webview_return()
+         * @param req Request data as JSON string (array of arguments)
+         * @param arg User-provided argument from webview_bind() (will be null if not provided)
+         */
+        void invoke(String seq, String req, com.sun.jna.Pointer arg);
+    }
 }

@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Java wrapper for webview using JNA (Java Native Access).
@@ -76,6 +79,9 @@ public class Webview implements Closeable {
 
     private long pointer;
     private boolean closed = false;
+    private String initScript = "";
+    private final Map<String, Function<String, String>> bindings = new HashMap<>();
+    private final Map<String, WebviewNative.BindCallback> nativeCallbacks = new HashMap<>();
 
     /**
      * Creates a new Webview instance.
@@ -150,6 +156,50 @@ public class Webview implements Closeable {
      */
     public void init(String js) {
         NATIVE.webview_init(pointer, js);
+    }
+
+    /**
+     * Sets the init script (executed before page load).
+     * @param script JavaScript code to inject
+     * @param prepend If true, prepends to existing init script; if false, replaces it
+     */
+    public void setInitScript(String script, boolean prepend) {
+        if (prepend) {
+            this.initScript = script + "\n" + this.initScript;
+        } else {
+            this.initScript = script;
+        }
+        if (pointer != 0) {
+            NATIVE.webview_init(pointer, this.initScript);
+        }
+    }
+
+    /**
+     * Registers a binding callable from JavaScript.
+     * @param name Name of the binding (accessible as window[name]())
+     * @param handler Function that receives JSON string of arguments, returns JSON string result (or null)
+     */
+    public void bind(String name, Function<String, String> handler) {
+        bindings.put(name, handler);
+        
+        // Create and store the callback to prevent garbage collection
+        WebviewNative.BindCallback callback = (seq, req, arg) -> {
+            try {
+                String result = handler.apply(req);
+                // Return the result asynchronously - empty string means undefined in JS
+                NATIVE.webview_return(pointer, seq, 0, result != null ? result : "");
+            } catch (Exception e) {
+                e.printStackTrace();
+                NATIVE.webview_return(pointer, seq, 1, "");
+            }
+        };
+        nativeCallbacks.put(name, callback);
+        
+        // Register with native webview (pass null for arg since we don't use it)
+        int errorCode = NATIVE.webview_bind(pointer, name, callback, null);
+        if (errorCode != 0) {
+            throw new RuntimeException("Failed to bind '" + name + "': error code " + errorCode);
+        }
     }
 
     /**

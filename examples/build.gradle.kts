@@ -3,9 +3,8 @@ plugins {
 }
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 dependencies {
@@ -13,7 +12,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("dev.webview.examples.HelloWorld")
+    mainClass.set("dev.webview.examples.BridgeExample")
 }
 
 // Never publish the examples module
