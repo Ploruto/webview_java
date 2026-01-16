@@ -29,6 +29,10 @@ public class Webview implements Closeable {
     private static WebviewNative loadNativeLibrary() {
         String osName = System.getProperty("os.name").toLowerCase();
         String arch = System.getProperty("os.arch").toLowerCase();
+        String javaArch = System.getProperty("sun.arch.data.model");
+        
+        System.err.println("[webview] OS: " + osName + ", Architecture: " + arch + ", Java bits: " + javaArch);
+        
         String resourcePath = null;
         String ext = null;
         String libName = "webview";
@@ -64,21 +68,27 @@ public class Webview implements Closeable {
                     tempLib.deleteOnExit();
                     Files.copy(in, tempLib.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     in.close();
-                    System.err.println("[webview] Loaded native library from: " + tempLib.getAbsolutePath());
+                    System.err.println("[webview] Extracted bundled library to: " + tempLib.getAbsolutePath());
+                    System.err.println("[webview] Bundled DLL size: " + tempLib.length() + " bytes");
+                    
                     // Load the library directly into the process
                     System.load(tempLib.getAbsolutePath());
+                    System.err.println("[webview] Successfully loaded native library via System.load()");
+                    
                     // Now create JNA proxy pointing to the absolute path (already loaded)
                     return Native.load(tempLib.getAbsolutePath(), WebviewNative.class);
                 } else {
                     System.err.println("[webview] Resource not found at: " + resourcePath);
                 }
-            } catch (IOException ex) {
+            } catch (IOException | UnsatisfiedLinkError ex) {
                 System.err.println("[webview] Failed to load from jar: " + ex.getMessage());
+                ex.printStackTrace();
                 // Fall through to try system library
             }
         }
 
         // If bundled version failed, try system library
+        System.err.println("[webview] Attempting to load system library: " + libName);
         return Native.load(libName, WebviewNative.class);
     }
 
@@ -94,9 +104,11 @@ public class Webview implements Closeable {
      * @param debug Enable developer tools if true
      */
     public Webview(boolean debug) {
+        System.err.println("[webview] Creating webview instance (debug=" + debug + ")");
         this.pointer = NATIVE.webview_create(debug ? 1 : 0, null);
+        System.err.println("[webview] webview_create returned pointer: " + pointer);
         if (this.pointer == 0) {
-            throw new RuntimeException("Failed to create webview instance");
+            throw new RuntimeException("Failed to create webview instance. Check WebView2 runtime is installed on Windows.");
         }
     }
 

@@ -153,10 +153,17 @@ jobs:
           cmake --build build
           
           # Copy to Java resources (Windows builds as libwebview.dll)
-          cp build/core/libwebview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/webview.dll"
-          
-          echo "✓ Windows x86_64 built"
-          ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+          if [ -f "build/core/libwebview.dll" ]; then
+            cp build/core/libwebview.dll "$GITHUB_WORKSPACE/$OUTPUT_DIR/webview.dll"
+            echo "✓ Windows x86_64 built"
+            ls -lh "$GITHUB_WORKSPACE/$OUTPUT_DIR/"
+            # Verify DLL is valid
+            file "$GITHUB_WORKSPACE/$OUTPUT_DIR/webview.dll"
+          else
+            echo "⚠️ libwebview.dll not found!"
+            find build -type f -name "*.dll" 2>/dev/null
+            exit 1
+          fi
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
